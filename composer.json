@@ -1,13 +1,13 @@
 {
-    "name": "vetal/swift_frame",
-    "description": "jump_php",
+    "name": "vetalforge/jumpix",
+    "description": "Lightweight, flexible, and powerful PHP framework for rapid development",
     "require": {
+        "php": "^7.4",
         "psr/container": "^2.0",
         "ext-pdo": "*"
     },
     "autoload": {
         "psr-4": {
-            "Psr\\Container\\": "vendor/psr/container/src/",
             "app\\": "app/"
         }
     }

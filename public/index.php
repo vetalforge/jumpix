@@ -16,7 +16,6 @@ $actionData = $router->getActionData($request->getUri());
 
 try {
     if (!empty($actionData)) {
-        $test = $actionData['controller'];
         $controller = $container->get($actionData['controller']);
         $action = $actionData['action'];
 

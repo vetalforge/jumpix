@@ -30,7 +30,7 @@ final class Container implements ContainerInterface
         return isset($this->dependencies[$id]);
     }
 
-    public function get(string $id): mixed
+    public function get(string $id)
     {
         if ($this->has($id)) {
             return call_user_func($this->dependencies[$id], $this);
