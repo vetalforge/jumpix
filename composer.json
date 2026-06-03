@@ -1,0 +1,33 @@
+{
+    "name": "vetalforge/jumpix",
+    "description": "Lightweight, flexible PHP framework for rapid development",
+    "type": "library",
+    "license": "MIT",
+    "keywords": [
+        "php",
+        "framework",
+        "micro-framework",
+        "mini-framework",
+        "mvc",
+        "router",
+        "container",
+        "orm",
+        "template-engine",
+        "jumpix"
+    ],
+    "require": {
+        "php": "^8.1",
+        "ext-pdo": "*",
+        "psr/container": "^2.0"
+    },
+    "suggest": {
+        "smarty/smarty": "Required for SmartyRenderer",
+        "doctrine/orm": "Required for Doctrine ORM repositories",
+        "symfony/cache": "Required by Doctrine ORM setup"
+    },
+    "autoload": {
+        "psr-4": {
+            "Jumpix\\": "src/"
+        }
+    }
+}
