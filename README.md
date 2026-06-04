@@ -1,167 +1,95 @@
 # Jumpix
 
-Jumpix is a minimalistic PHP framework based on the **MVC** architecture.  It focuses on simplicity, flexibility, and convenient web application development.
+Jumpix is a lightweight PHP framework package for building small MVC applications. It provides the reusable framework core: routing, HTTP request/session helpers, a PSR-compatible dependency injection container, database query tools, ORM abstractions, and view rendering utilities.
 
-**Key Features**
-- Custom router for URL handling
-- Dependency injection (DI) container
-- Native Active Record ORM for database interactions
-- Doctrine ORM support through a switchable repository layer
-- Template Engine with conditionals and loops
-- HTTP request and session management
-- Error handling and custom error pages
-
-## System Requirements
-- PHP >= 8.0
-- MySQL or MariaDB
-- Apache 2
-- Composer
+For a ready-to-run application structure, use [vetalforge/jumpix-app](https://packagist.org/packages/vetalforge/jumpix-app).
 
 ## Installation
-Clone the repository:
-```bash
-git clone https://github.com/your-username/your-repository.git
-```
 
-Navigate to the project directory:
+Install the framework package with Composer:
 
 ```bash
-cd your-repository
+composer require vetalforge/jumpix
 ```
 
-Configure the application by editing the config/app.php file:
+## Requirements
+
+- PHP 8.1 or higher
+- Composer
+- PDO extension
+
+Optional integrations:
+
+```bash
+composer require smarty/smarty
+composer require doctrine/orm symfony/cache
+```
+
+## Namespace
+
+Framework classes use the `Jumpix\` namespace:
+
 ```php
-<?php
-
-require_once __DIR__ . '/env_helper.php';
-
-$appPath = env_value('APP_PATH', dirname(__DIR__));
-$appPath = rtrim($appPath, '/\\') . DIRECTORY_SEPARATOR;
-
-define('APPLICATION', $appPath);
-define('HOST', env_value('HOST', 'http://localhost'));
-define('DOMAIN_SYM', env_bool('DOMAIN_SYM', false));
-define('DOMAIN_ADDITION', env_value('DOMAIN_ADDITION', '/framework'));
-
-define('DB_HOST', env_value('DB_HOST', 'localhost'));
-define('DB_USER', env_value('DB_USER', 'root'));
-define('DB_PASS', env_value('DB_PASS', ''));
-define('DB_NAME', env_value('DB_NAME', 'framework_test'));
-
-define('ORM_DRIVER', env_value('ORM_DRIVER', 'native'));
+use Jumpix\Container\Container;
+use Jumpix\Http\Request;
+use Jumpix\Http\Router;
+use Jumpix\Http\Session;
+use Jumpix\Core\Database\QueryBuilder;
+use Jumpix\Models\Model;
+use Jumpix\Views\TemplateEngine;
 ```
 
-Install dependencies with Composer:
+Your application code should use its own namespace, usually `App\`.
 
-```bash
-composer install
-```
+## What Is Included
 
-Composer installs the framework dependencies, including Doctrine ORM and Symfony Cache for the Doctrine driver.
-
-## Project Structure
-```bash
-app/
-  Container/
-  Controllers/
+```text
+src/
+  Container/   Dependency injection container
   Core/
-    Database/
-    ORM/
-  Entities/
-  Http/
-  Models/
-  Views/
-config/
-  app.php
-  env_helper.php
-  routes.php
-database/
-public/
-  assets/
-  index.php
-resources/
-  assets/
-  views/
-vendor/
+    Database/  Query builder and database seeder
+    ORM/       Repository interfaces and native/Doctrine drivers
+  Http/        Request, router, and session helpers
+  Models/      Base Active Record model
+  Views/       Native, Smarty, and template engine renderers
 ```
 
-## Entry Point
-The main entry point of the application is public/index.php.
+## Basic Router Usage
 
-## Routes are matched
-
-Corresponding controllers are executed
-
-## Routing
-Routes are defined in config/routes.php:
 ```php
-<?php
+use Jumpix\Http\Router;
 
-use App\Controllers\MainPageController;
-use App\Controllers\DemoController;
-
-return [
+$router = new Router([
     '/' => [
-        'controller' => MainPageController::class,
-        'action' => 'index'
+        'controller' => App\Controllers\HomeController::class,
+        'action' => 'index',
     ],
-    '/usage' => [
-        'controller' => DemoController::class,
-        'action' => 'index'
-    ],
-    '/usage/model-test' => [
-        'controller' => DemoController::class,
-        'action' => 'modelTest'
-    ],
-    '/usage/doctrine-model-test' => [
-        'controller' => DemoController::class,
-        'action' => 'doctrineModelTest'
-    ],
-];
+]);
+
+$actionData = $router->getActionData('/');
 ```
 
-## Controllers
-Controllers must extend the base Controller class:
+## Container Usage
+
 ```php
-<?php
+use Jumpix\Container\Container;
+use Jumpix\Http\Request;
 
-namespace App\Controllers;
+$container = new Container([
+    Request::class => fn () => new Request(false, '/my-app'),
+]);
 
-use App\Core\ORM\ORM;
-use App\Http\{Request, Session};
-
-class DemoController extends Controller
-{
-    private ORM $orm;
-
-    public function __construct(Request $request, Session $session, ORM $orm)
-    {
-        parent::__construct($request, $session);
-        $this->orm = $orm;
-    }
-
-    public function index()
-    {
-        $url = ['home' => HOST . DOMAIN_ADDITION];
-        $this->render('header', $url);
-        $this->render('demo', $url);
-        $this->render('footer');
-    }
-}
+$request = $container->get(Request::class);
 ```
 
-## Models and ORM
-Jumpix includes two ORM paths:
+## Native Model Usage
 
-- Native Active Record models in `app/Models`
-- Doctrine entities in `app/Entities`
-
-The native ORM keeps the simple Active Record API:
+Create application models by extending the framework base model:
 
 ```php
-<?php
-
 namespace App\Models;
+
+use Jumpix\Models\Model;
 
 class User extends Model
 {
@@ -169,75 +97,51 @@ class User extends Model
 }
 ```
 
+Before using native models, provide a configured query builder:
+
+```php
+use Jumpix\Core\Database\QueryBuilder;
+use Jumpix\Models\Model;
+
+$pdo = new PDO('mysql:host=localhost;dbname=app;charset=UTF8', 'root', '');
+Model::setBuilder(new QueryBuilder($pdo));
+```
+
+Then use the Active Record API:
+
 ```php
 use App\Models\User;
 
 $users = User::all();
 $user = User::find(1);
 
-$created = User::create([
-    'name' => 'Model Test',
-    'email' => 'model-test@example.test',
+$user = User::create([
+    'name' => 'John Doe',
+    'email' => 'john@example.test',
 ]);
 
-$created->name = 'Model Test Updated';
-$created->save();
-$created->delete();
+$user->name = 'John Updated';
+$user->save();
+$user->delete();
 ```
-
-Doctrine support is available through the repository layer. The active driver is configured with `ORM_DRIVER`:
-
-```php
-define('ORM_DRIVER', env_value('ORM_DRIVER', 'native'));
-```
-
-Use `native` for the built-in ORM:
-
-```env
-ORM_DRIVER=native
-```
-
-Use `doctrine` for Doctrine ORM:
-
-```env
-ORM_DRIVER=doctrine
-```
-
-Doctrine entities are stored in `app/Entities`. The framework includes an example `App\Entities\User` entity mapped to the `users` table.
-
-```php
-$users = $orm->repository(\App\Entities\User::class);
-
-$user = $users->find(1);
-
-$created = \App\Entities\User::create(
-    'Doctrine Model Test',
-    'doctrine-model-test@example.test',
-    password_hash('secret', PASSWORD_DEFAULT)
-);
-
-$users->save($created);
-$users->delete($created);
-```
-
-Demo pages:
-
-- `/usage/model-test` tests the native Active Record model.
-- `/usage/doctrine-model-test` tests the Doctrine entity through the repository layer.
 
 ## Template Engine
-Jumpix also includes a template engine supporting variables, loops, and conditionals.
 
-Example template resources/views/test.php:
+```php
+use Jumpix\Views\TemplateEngine;
+
+$views = new TemplateEngine(__DIR__ . '/resources/views');
+
+echo $views->render('home', [
+    'title' => 'Welcome',
+    'items' => ['One', 'Two', 'Three'],
+]);
+```
+
+Example template:
+
 ```html
 <h1>{{ title }}</h1>
-<p>{{ text1 }}</p>
-
-@if($user)
-<p>Welcome, {{ user }}</p>
-@else
-<p>Please log in.</p>
-@endif
 
 <ul>
     @foreach($items as $item)
@@ -246,11 +150,28 @@ Example template resources/views/test.php:
 </ul>
 ```
 
-## Dependency Injection
-All classes that should be injected are registered inside app/Container/Dependencies.php.
+## Database Seeder
 
-## Error Handling
-Custom error pages are supported, including a styled 404 Page Not Found.
+```php
+use Jumpix\Core\Database\DatabaseSeeder;
+
+$seeder = new DatabaseSeeder($pdo, __DIR__ . '/database');
+$seeder->run([
+    'create_tables.sql',
+    'create_users.sql',
+]);
+```
+
+## Starter App
+
+The recommended way to start a new project is:
+
+```bash
+composer create-project vetalforge/jumpix-app my-app
+```
+
+The app skeleton contains `public/`, `config/`, `resources/`, controllers, routes, examples, and DI bindings.
 
 ## License
-MIT License.
+
+Jumpix is open-sourced software licensed under the MIT license.
